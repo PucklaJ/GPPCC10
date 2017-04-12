@@ -21,6 +21,11 @@ bool Game::init()
 
 bool Game::update()
 {
+	if(getInputManager()->justPressed(SDLK_f))
+	{
+		getWindow()->setFullscreen(!getWindow()->isFullscreen(),SDL_WINDOW_FULLSCREEN);
+	}
+
 	return true;
 }
 

@@ -1,0 +1,10 @@
+Game similiar to God of War
+
+You play as a warrior
+There are fighting parts and puzzle parts
+
+You are fighting against swordsman and archer
+
+puzzle parts can consist of moving around objects
+
+You have special attacks
