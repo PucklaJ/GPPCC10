@@ -14,7 +14,9 @@
 #define SLOW_DOWN_VEL SPEED/3.0
 #define STICK_DEADZONE 10000
 #define NOTHING_PRESSED_STAND_TIME 0.5
-#define DAMPING 0.2f
+#define DAMPING_WITH_MOVE 0.0f
+#define DAMPING_WITHOUT_MOVE 10.0f
+#define ZERO_VEL_DIVIDE 1.5f
 
 class GameScreen;
 class Game;
@@ -47,7 +49,6 @@ private:
 	bool m_pressedPrevious[6];
 	int m_xAxis = 0;
 	int m_yAxis = 0;
-	double m_nothingPressedTime = 0.0;
 
 
 };

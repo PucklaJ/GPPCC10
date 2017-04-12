@@ -24,7 +24,7 @@ bool Player::init()
 	b2BodyDef bdef;
 	bdef.fixedRotation = true;
 	bdef.type = b2_dynamicBody;
-	bdef.linearDamping = DAMPING;
+	bdef.linearDamping = DAMPING_WITH_MOVE;
 
 	b2FixtureDef fdef;
 	fdef.density = DEF_DENSITY;
@@ -91,50 +91,51 @@ void Player::controlMovement()
 	{
 		pressed = true;
 		force.x = 0.0;
-		force.y = SPEED;
+		force.y = SPEED*10.0;
 	}
 	if(isPressed(BUT_LEFT))
 	{
 		pressed = true;
-		force.x = -SPEED;
+		force.x = -SPEED*10.0;
 		force.y = 0.0;
 	}
 	if(isPressed(BUT_RIGHT))
 	{
 		pressed = true;
-		force.x = SPEED;
+		force.x = SPEED*10.0;
 		force.y = 0.0;
 	}
 	if(isPressed(BUT_DOWN))
 	{
 		pressed = true;
 		force.x = 0.0;
-		force.y = -SPEED;
+		force.y = -SPEED*10.0;
 	}
+
 
 	if(pressed)
 	{
+		getBody()->SetLinearDamping(0.0f);
 		getBody()->ApplyForceToCenter(force,true);
-		m_nothingPressedTime = 0.0;
+		double x,y;
+		x = getBody()->GetLinearVelocity().x;
+		y = getBody()->GetLinearVelocity().y;
+
+		if(force.x==0.0)
+			getBody()->SetLinearVelocity(b2Vec2(x/ZERO_VEL_DIVIDE,y));
+		else if(force.y==0.0)
+			getBody()->SetLinearVelocity(b2Vec2(x,y/ZERO_VEL_DIVIDE));
+		if(abs(x) > SPEED)
+			getBody()->SetLinearVelocity(b2Vec2(x>0?SPEED:-SPEED,y));
+		if(abs(y) > SPEED)
+			getBody()->SetLinearVelocity(b2Vec2(x,y>0?SPEED:-SPEED));
 	}
 	else
 	{
-		m_nothingPressedTime += m_game->getDeltaTimeInSeconds();
-		if(m_nothingPressedTime > NOTHING_PRESSED_STAND_TIME)
-			getBody()->SetLinearVelocity(b2Vec2(0.0,0.0));
+		getBody()->SetLinearDamping(10.0f);
 	}
-	// Slow down
 
-	if(getBody()->GetLinearVelocity().LengthSquared() > SLOW_DOWN_POINT*SLOW_DOWN_POINT)
-	{
-		b2Vec2 vel = getBody()->GetLinearVelocity();
-		vel = -vel;
-		vel.x /= vel.Length();
-		vel.y /= vel.Length();
-		vel *= SLOW_DOWN_VEL;
-
-		getBody()->ApplyForceToCenter(vel,true);
-	}
+	std::cout << "VEL: " << getBody()->GetLinearVelocity().x << "; " << getBody()->GetLinearVelocity().y << std::endl;
 
 }
 
