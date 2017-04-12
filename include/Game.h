@@ -2,6 +2,8 @@
 #define GAME_H
 #include <MainClass.h>
 
+class GameScreen;
+
 class Game : public SDL::MainClass
 {
 public:
@@ -12,6 +14,8 @@ public:
 	bool update() override;
 
 	void quit() override;
+private:
+	GameScreen* m_gameScreen = nullptr;
 };
 
 
