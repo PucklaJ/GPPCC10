@@ -7,6 +7,9 @@
 #include <Physics.h>
 #include <Camera.h>
 #include <TiledMap.h>
+#include <Colors.h>
+#include "../include/SwordEnemy.h"
+#include "../include/BowEnemy.h"
 
 Player::Player(const SDL::Vector2& pos) : SDL::PhysicsSprite("Assets/player.png")
 {
@@ -31,9 +34,13 @@ bool Player::init()
 	fdef.friction = DEF_FRICTION;
 	fdef.restitution = DEF_RESTITUTION;
 
-	b2Body* body = m_mainClass->getPhysics()->createCIRCLE(getPosition(),10.0,bdef,fdef);
+	b2Body* body = m_mainClass->getPhysics()->createCIRCLE(getPosition(),13.0,bdef,fdef);
 	setBody(body);
-	setOffset(SDL::Vector2(0.0,17.0));
+	setOffset(SDL::Vector2(0.0,-17.0));
+
+	m_hitBox = new SDL::Sprite(SDL::Textures::BOX(m_game,SDL::Vector2(32.0,32.0),SDL::Colors::RED));
+	m_hitBox->setVisible(false);
+	addChild(m_hitBox);
 
 	return true;
 }
@@ -87,29 +94,36 @@ void Player::controlMovement()
 	b2Vec2 force(0,0);
 	bool pressed = false;
 
-	if(isPressed(BUT_UP))
+	if(!isState(PLAYER_KNOCKBACK_STATE))
 	{
-		pressed = true;
-		force.x = 0.0;
-		force.y = SPEED*10.0;
-	}
-	if(isPressed(BUT_LEFT))
-	{
-		pressed = true;
-		force.x = -SPEED*10.0;
-		force.y = 0.0;
-	}
-	if(isPressed(BUT_RIGHT))
-	{
-		pressed = true;
-		force.x = SPEED*10.0;
-		force.y = 0.0;
-	}
-	if(isPressed(BUT_DOWN))
-	{
-		pressed = true;
-		force.x = 0.0;
-		force.y = -SPEED*10.0;
+		if(isPressed(BUT_UP))
+		{
+			pressed = true;
+			force.x = 0.0;
+			force.y = SPEED*10.0;
+			m_lookDir = PLAYER_UP;
+		}
+		if(isPressed(BUT_LEFT))
+		{
+			pressed = true;
+			force.x = -SPEED*10.0;
+			force.y = 0.0;
+			m_lookDir = PLAYER_LEFT;
+		}
+		if(isPressed(BUT_RIGHT))
+		{
+			pressed = true;
+			force.x = SPEED*10.0;
+			force.y = 0.0;
+			m_lookDir = PLAYER_RIGHT;
+		}
+		if(isPressed(BUT_DOWN))
+		{
+			pressed = true;
+			force.x = 0.0;
+			force.y = -SPEED*10.0;
+			m_lookDir = PLAYER_DOWN;
+		}
 	}
 
 
@@ -132,10 +146,9 @@ void Player::controlMovement()
 	}
 	else
 	{
+		if(!isState(PLAYER_KNOCKBACK_STATE))
 		getBody()->SetLinearDamping(10.0f);
 	}
-
-	std::cout << "VEL: " << getBody()->GetLinearVelocity().x << "; " << getBody()->GetLinearVelocity().y << std::endl;
 
 }
 
@@ -143,13 +156,73 @@ bool Player::update()
 {
 	handleInput();
 	controlMovement();
+	controlAttacks();
+
+	if(isState(PLAYER_ATTACK_STATE))
+	{
+		m_hitBox->setVisible(true);
+		m_hitBox->setPosition(m_hitPos + getPosition());
+		m_attackTime += m_game->getDeltaTimeInSeconds();
+		if(m_attackTime >= PLAYER_ATTACK_TIME)
+		{
+			m_attackTime = 0.0;
+			setState(0);
+		}
+		for(size_t i = 0;i<m_gameScreen->getSwordEnemies().size();i++)
+		{
+			SwordEnemy* e = m_gameScreen->getSwordEnemies()[i];
+			if(e->intersects(m_hitPos + getPosition(),SDL::Vector2(32.0,32.0)))
+			{
+				e->damage(PLAYER_NORM_DAMAGE,m_mainClass->getPhysics()->coordsPixelToWorld(m_hitPos+getPosition()+SDL::Vector2(16.0,16.0)));
+			}
+		}
+	}
+	else
+	{
+		m_hitBox->setVisible(false);
+	}
+
+	if(m_damageTime > 0.0)
+	{
+		m_damageTime -= m_mainClass->getDeltaTimeInSeconds();
+	}
+	else
+	{
+		if(isState(PLAYER_KNOCKBACK_STATE))
+		{
+			setState(0);
+		}
+	}
 
 	for(int i = 0;i<6;i++)
 	m_pressedPrevious[i] = m_pressed[i];
 
 	setCamera();
 
+	setPriority(getPosition().getY());
+
 	return true;
+}
+
+void Player::damage(double health,const b2Vec2& pos)
+{
+	if(m_damageTime > 0.0)
+		return;
+
+	m_damageTime = PLAYER_NO_DAMAGE_TIME;
+	b2Vec2 impulse = getBody()->GetPosition();
+	impulse -= pos;
+	impulse.Normalize();
+	impulse.x *= PLAYER_KNOCKBACK;
+	impulse.y *= PLAYER_KNOCKBACK;
+
+	setState(PLAYER_KNOCKBACK_STATE);
+
+	getBody()->ApplyLinearImpulse(impulse,pos,true);
+	m_health -= health;
+	if(m_health <= 0.0)
+		setState(PLAYER_DEAD_STATE);
+	std::cout << "Healh: " << m_health << std::endl;
 }
 
 void Player::onAxisMotion(const SDL_ControllerAxisEvent& e)
@@ -210,6 +283,47 @@ void Player::onButtonUp(const SDL_ControllerButtonEvent& e)
 		m_controller[BUT_SPECIAL] = false;
 		break;
 	}
+}
+
+void Player::controlAttacks()
+{
+	if(isState(PLAYER_KNOCKBACK_STATE))
+		return;
+
+	if(!isState(PLAYER_ATTACK_STATE) && justPressed(BUT_ATTACK))
+	{
+		attack(m_lookDir);
+	}
+}
+
+void Player::attack(int dir)
+{
+	setState(PLAYER_ATTACK_STATE);
+	switch(dir)
+	{
+	case PLAYER_RIGHT:
+		m_hitPos = SDL::Vector2(32.0,16.0);
+		break;
+	case PLAYER_LEFT:
+		m_hitPos = SDL::Vector2(-32.0,16.0);
+		break;
+	case PLAYER_UP:
+		m_hitPos = SDL::Vector2(0.0,-32.0);
+		break;
+	case PLAYER_DOWN:
+		m_hitPos = SDL::Vector2(0.0,64.0);
+		break;
+	}
+}
+
+bool Player::isState(long state)
+{
+	return m_state & state;
+}
+void Player::setState(long state,long del)
+{
+	m_state &= ~del;
+	m_state |= state;
 }
 
 void Player::quit()
