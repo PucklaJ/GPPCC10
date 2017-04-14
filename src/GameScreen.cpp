@@ -34,7 +34,7 @@ void GameScreen::loadMap()
 {
 	m_map = new SDL::TiledMap("Assets/level01.tmx");
 	addChild(m_map);
-	m_map->setPriority(-10);
+	m_map->setPriority(-100);
 	setSize(m_map->GetWidth()*m_map->GetTileWidth(),m_map->GetHeight()*m_map->GetTileHeight());
 
 	for(size_t i = 0;i<m_map->GetObjectGroups().size();i++)
@@ -65,10 +65,11 @@ void GameScreen::loadMap()
 		}
 		else if(objG->GetName() == "collisions")
 		{
+			char* c = "WORLD";
 			for(int i = 0;i<objG->GetNumObjects();i++)
 			{
 				const Tmx::Object* obj = objG->GetObject(i);
-				m_map->toCollisionBody(obj);
+				m_map->toCollisionBody(obj)->GetFixtureList()->SetUserData(c);
 			}
 		}
 	}

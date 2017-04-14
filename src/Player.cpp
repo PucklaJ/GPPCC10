@@ -33,6 +33,8 @@ bool Player::init()
 	fdef.density = DEF_DENSITY;
 	fdef.friction = DEF_FRICTION;
 	fdef.restitution = DEF_RESTITUTION;
+	char* c = "PLAYER";
+	fdef.userData = c;
 
 	b2Body* body = m_mainClass->getPhysics()->createCIRCLE(getPosition(),13.0,bdef,fdef);
 	setBody(body);
@@ -41,6 +43,10 @@ bool Player::init()
 	m_hitBox = new SDL::Sprite(SDL::Textures::BOX(m_game,SDL::Vector2(32.0,32.0),SDL::Colors::RED));
 	m_hitBox->setVisible(false);
 	addChild(m_hitBox);
+
+	std::cout << "asin(0): " << asin(0)/MATH_PI*180.0 << std::endl;
+	std::cout << "asin(1): " << asin(1)/MATH_PI*180.0 << std::endl;
+	std::cout << "asin(-1): " << asin(-1)/MATH_PI*180.0 << std::endl;
 
 	return true;
 }
@@ -171,6 +177,14 @@ bool Player::update()
 		for(size_t i = 0;i<m_gameScreen->getSwordEnemies().size();i++)
 		{
 			SwordEnemy* e = m_gameScreen->getSwordEnemies()[i];
+			if(e->intersects(m_hitPos + getPosition(),SDL::Vector2(32.0,32.0)))
+			{
+				e->damage(PLAYER_NORM_DAMAGE,m_mainClass->getPhysics()->coordsPixelToWorld(m_hitPos+getPosition()+SDL::Vector2(16.0,16.0)));
+			}
+		}
+		for(size_t i = 0;i<m_gameScreen->getBowEnemies().size();i++)
+		{
+			BowEnemy* e = m_gameScreen->getBowEnemies()[i];
 			if(e->intersects(m_hitPos + getPosition(),SDL::Vector2(32.0,32.0)))
 			{
 				e->damage(PLAYER_NORM_DAMAGE,m_mainClass->getPhysics()->coordsPixelToWorld(m_hitPos+getPosition()+SDL::Vector2(16.0,16.0)));
