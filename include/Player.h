@@ -2,6 +2,7 @@
 #define PLAYER_H
 #include <PhysicsSprite.h>
 #include <JoystickListener.h>
+#include "Animations.h"
 
 #define BUT_UP 0
 #define BUT_LEFT 1
@@ -26,6 +27,7 @@
 #define PLAYER_UP 4
 #define PLAYER_KNOCKBACK 150.0
 #define PLAYER_NO_DAMAGE_TIME 0.3
+#define PLAYER_STAND_VEL 1.0
 
 #define PLAYER_DEAD_STATE 1 << 0
 #define PLAYER_ATTACK_STATE 1 << 1
@@ -63,10 +65,15 @@ private:
 	void handleInput();
 	void controlMovement();
 	void controlAttacks();
+	void updateAnimations();
 	bool isPressed(int);
 	bool justPressed(int);
 	void setCamera();
 	void attack(int);
+	void setAnimation(int);
+
+	int m_curAnim = -1;
+	int m_curAnimTween = -1;
 
 	Game* m_game = nullptr;
 	GameScreen* m_gameScreen = nullptr;

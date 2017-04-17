@@ -27,6 +27,8 @@ bool GameScreen::init()
 	m_joystickList->addListener(m_player,0);
 	m_game->getJoystickManager()->setListener(m_joystickList);
 
+	m_mainClass->getCamera()->setScale(2.0f);
+
 	return true;
 }
 

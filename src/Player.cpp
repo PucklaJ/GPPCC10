@@ -10,6 +10,8 @@
 #include <Colors.h>
 #include "../include/SwordEnemy.h"
 #include "../include/BowEnemy.h"
+#include "../include/Rects.h"
+#include <Tween.h>
 
 Player::Player(const SDL::Vector2& pos) : SDL::PhysicsSprite("Assets/player.png")
 {
@@ -44,11 +46,148 @@ bool Player::init()
 	m_hitBox->setVisible(false);
 	addChild(m_hitBox);
 
-	std::cout << "asin(0): " << asin(0)/MATH_PI*180.0 << std::endl;
-	std::cout << "asin(1): " << asin(1)/MATH_PI*180.0 << std::endl;
-	std::cout << "asin(-1): " << asin(-1)/MATH_PI*180.0 << std::endl;
+	setAnimation(ANIMATIONS::PLAYER::STAND::DOWN);
+	m_lookDir = PLAYER_DOWN;
 
 	return true;
+}
+
+void Player::setAnimation(int i)
+{
+	if(m_curAnim == i)
+		return;
+
+	if(m_curAnimTween != -1)
+	{
+		stopTween(m_curAnimTween);
+		m_curAnimTween = -1;
+	}
+
+
+	std::vector<SDL_Rect> rects;
+	double time = 0.0;
+	bool loop = true;
+	SDL::AnimationTween* animTween = nullptr;
+
+	switch(i)
+	{
+	case ANIMATIONS::PLAYER::STAND::UP:
+
+		rects.push_back(RECTS::PLAYER::UP::stand);
+		loop = false;
+
+		break;
+	case ANIMATIONS::PLAYER::STAND::DOWN:
+
+		rects.push_back(RECTS::PLAYER::DOWN::stand);
+		loop = false;
+
+		break;
+	case ANIMATIONS::PLAYER::STAND::LEFT:
+
+		rects.push_back(RECTS::PLAYER::LEFT::stand);
+		loop = false;
+
+		break;
+	case ANIMATIONS::PLAYER::STAND::RIGHT:
+
+		rects.push_back(RECTS::PLAYER::RIGHT::stand);
+		loop = false;
+
+		break;
+	case ANIMATIONS::PLAYER::WALK::UP:
+
+		rects.push_back(RECTS::PLAYER::UP::WALK::r1);
+		rects.push_back(RECTS::PLAYER::UP::stand);
+		rects.push_back(RECTS::PLAYER::UP::WALK::r2);
+		rects.push_back(RECTS::PLAYER::UP::stand);
+
+		loop = true;
+		time = 0.1;
+		break;
+	case ANIMATIONS::PLAYER::WALK::DOWN:
+
+		rects.push_back(RECTS::PLAYER::DOWN::WALK::r1);
+		rects.push_back(RECTS::PLAYER::DOWN::stand);
+		rects.push_back(RECTS::PLAYER::DOWN::WALK::r2);
+		rects.push_back(RECTS::PLAYER::DOWN::stand);
+
+		loop = true;
+		time = 0.1;
+		break;
+	case ANIMATIONS::PLAYER::WALK::LEFT:
+
+		rects.push_back(RECTS::PLAYER::LEFT::WALK::r1);
+		rects.push_back(RECTS::PLAYER::LEFT::stand);
+		rects.push_back(RECTS::PLAYER::LEFT::WALK::r2);
+		rects.push_back(RECTS::PLAYER::LEFT::stand);
+
+		loop = true;
+		time = 0.1;
+		break;
+	case ANIMATIONS::PLAYER::WALK::RIGHT:
+
+		rects.push_back(RECTS::PLAYER::RIGHT::WALK::r1);
+		rects.push_back(RECTS::PLAYER::RIGHT::stand);
+		rects.push_back(RECTS::PLAYER::RIGHT::WALK::r2);
+		rects.push_back(RECTS::PLAYER::RIGHT::stand);
+
+		loop = true;
+		time = 0.1;
+		break;
+	}
+
+
+	m_curAnim = i;
+	animTween = new SDL::AnimationTween(rects,time,loop,false);
+	m_curAnimTween = addTween(animTween);
+}
+
+void Player::updateAnimations()
+{
+	double x = getBody()->GetLinearVelocity().x;
+	double y = getBody()->GetLinearVelocity().y;
+
+	if(abs(x) < PLAYER_STAND_VEL && abs(y) < PLAYER_STAND_VEL)
+	{
+		switch(m_lookDir)
+		{
+		case PLAYER_UP:
+			setAnimation(ANIMATIONS::PLAYER::STAND::UP);
+			break;
+		case PLAYER_DOWN:
+			setAnimation(ANIMATIONS::PLAYER::STAND::DOWN);
+			break;
+		case PLAYER_LEFT:
+			setAnimation(ANIMATIONS::PLAYER::STAND::LEFT);
+			break;
+		case PLAYER_RIGHT:
+			setAnimation(ANIMATIONS::PLAYER::STAND::RIGHT);
+			break;
+		}
+	}
+	else if(abs(x) > abs(y))
+	{
+		if(x > 0.0)
+		{
+			setAnimation(ANIMATIONS::PLAYER::WALK::RIGHT);
+		}
+		else
+		{
+			setAnimation(ANIMATIONS::PLAYER::WALK::LEFT);
+		}
+	}
+	else
+	{
+		if(y > 0.0)
+		{
+			setAnimation(ANIMATIONS::PLAYER::WALK::UP);
+		}
+		else
+		{
+			setAnimation(ANIMATIONS::PLAYER::WALK::DOWN);
+		}
+	}
 }
 
 bool Player::isPressed(int i)
@@ -163,6 +302,7 @@ bool Player::update()
 	handleInput();
 	controlMovement();
 	controlAttacks();
+	updateAnimations();
 
 	if(isState(PLAYER_ATTACK_STATE))
 	{
